@@ -10,5 +10,11 @@
     "quantity": 100,
     "price": 5,
     "id": "19cbca7b-3a16-4662-b9ca-f6f22cf9966f"
+  },
+  {
+    "id": "cf32ede6-38ce-48a6-b8c7-72880cfcbc74",
+    "name": "\"burger\"",
+    "quantity": "5",
+    "image": "1727375500513-392719764-images (1).jpg"
   }
 ]

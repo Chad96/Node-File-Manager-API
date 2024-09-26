@@ -69,6 +69,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(shoppingList));
   }
+  
   // Handle POST request to add an item with an image
   else if (req.method === 'POST' && req.url === '/shopping-list') {
     upload.single('image')(req, res, (err) => {
@@ -77,39 +78,36 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({ error: 'Image upload failed' }));
       }
 
-      let body = '';
-      req.on('data', chunk => body += chunk);
-      req.on('end', () => {
-        try {
-          const newItem = JSON.parse(body);
-          if (!newItem.name || !newItem.quantity) {
-            throw new Error('Missing required fields');
-          }
+      // Multer automatically processes the form data, req.body now contains fields.
+      const { name, quantity } = req.body;
 
-          // Read existing shopping list
-          const shoppingList = readShoppingList();
+      // Ensure required fields are present
+      if (!name || !quantity) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Missing required fields' }));
+      }
 
-          // Generate a new UUID for the item
-          newItem.id = uuidv4();
+      // Read existing shopping list
+      const shoppingList = readShoppingList();
 
-          // Add the image filename to the item if an image was uploaded
-          if (req.file) {
-            newItem.image = req.file.filename; // Save the filename in the item
-          }
+      // Create a new item with a unique ID
+      const newItem = {
+        id: uuidv4(),
+        name,
+        quantity,
+        image: req.file ? req.file.filename : null // Save the uploaded image filename
+      };
 
-          // Add the new item to the list and update the shopping list file
-          shoppingList.push(newItem);
-          updateShoppingList(shoppingList);
+      // Add the new item to the list and update the file
+      shoppingList.push(newItem);
+      updateShoppingList(shoppingList);
 
-          res.writeHead(201, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Item added', id: newItem.id, image: req.file ? req.file.filename : null }));
-        } catch (error) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: error.message }));
-        }
-      });
+      // Return the newly added item details
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Item added', id: newItem.id, image: newItem.image }));
     });
   }
+  
   // Handle PUT request to update the entire item
   else if (req.method === 'PUT' && req.url.startsWith('/shopping-list/')) {
     const id = req.url.split('/')[2];
@@ -143,63 +141,24 @@ const server = http.createServer((req, res) => {
       }
     });
   }
-  // Handle PATCH request to partially update an item
-  else if (req.method === 'PATCH' && req.url.startsWith('/shopping-list/')) {
-    const id = req.url.split('/')[2];
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const updatedFields = JSON.parse(body); // Fields to be updated
-        let shoppingList = readShoppingList();
-
-        let itemFound = false;
-        shoppingList = shoppingList.map(item => {
-          if (item.id === id) {
-            itemFound = true;
-            return { ...item, ...updatedFields }; // Merge only the updated fields
-          }
-          return item;
-        });
-
-        if (itemFound) {
-          updateShoppingList(shoppingList);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Item updated partially' }));
-        } else {
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Item not found' }));
-        }
-      } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: error.message }));
-      }
-    });
-  }
+  
   // Handle DELETE request to remove an item
   else if (req.method === 'DELETE' && req.url.startsWith('/shopping-list/')) {
     const id = req.url.split('/')[2];
-    console.log(id);
     
     let shoppingList = readShoppingList();
-    console.log(shoppingList);
-
-    // Filter out the item with the matching ID
-    const updatedList = shoppingList.filter(item => item.id != id);
-    console.log({updatedList})
-    
+    const updatedList = shoppingList.filter(item => item.id !== id);
 
     if (shoppingList.length === updatedList.length) {
-      // No item was found to delete (i.e., the list length didn't change)
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Item not found' }));
     } else {
-      // Update the list and write to file
       updateShoppingList(updatedList);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Item deleted' }));
     }
   }
+  
   // Handle invalid routes
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
