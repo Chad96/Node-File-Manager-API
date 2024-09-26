@@ -1,12 +1,14 @@
 [
   {
-    "id": 1,
-    "name": "pear",
-    "quantity": 5
+    "name": "Bananas",
+    "quantity": 10,
+    "price": 2.5,
+    "id": "15309a3f-f5a3-4a25-8272-0cc0ecf2e45f"
   },
   {
-    "id": 5,
-    "name": "Apples",
-    "quantity": 5
+    "name": "pear",
+    "quantity": 100,
+    "price": 5,
+    "id": "19cbca7b-3a16-4662-b9ca-f6f22cf9966f"
   }
 ]
