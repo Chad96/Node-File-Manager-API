@@ -45,30 +45,86 @@ const server = http.createServer((req, res) => {
         if (!newItem.name || !newItem.quantity) {
           throw new Error('Missing required fields');
         }
+
+        // Read existing shopping list
         const shoppingList = readShoppingList();
+        
+        // Generate a new ID
+        const newId = shoppingList.length ? Math.max(...shoppingList.map(item => item.id)) + 1 : 1;
+
+        // Add new item with the generated ID
+        newItem.id = newId;
         shoppingList.push(newItem);
         updateShoppingList(shoppingList);
+        
         res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Item added' }));
+        res.end(JSON.stringify({ message: 'Item added', id: newId }));
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: error.message }));
       }
     });
   }
-  // Handle PUT request to update an item
+  // Handle PUT request to update the entire item
   else if (req.method === 'PUT' && req.url.startsWith('/shopping-list/')) {
-    const id = req.url.split('/')[2];
+    const id = parseInt(req.url.split('/')[2]); // Ensure ID is a number
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
         const updatedItem = JSON.parse(body);
         let shoppingList = readShoppingList();
-        shoppingList = shoppingList.map(item => item.id === id ? updatedItem : item);
-        updateShoppingList(shoppingList);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Item updated' }));
+
+        let itemFound = false;
+        shoppingList = shoppingList.map(item => {
+          if (item.id === id) {
+            itemFound = true;
+            return { ...item, ...updatedItem }; // Full update
+          }
+          return item;
+        });
+
+        if (itemFound) {
+          updateShoppingList(shoppingList);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Item updated' }));
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Item not found' }));
+        }
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: error.message }));
+      }
+    });
+  }
+  // Handle PATCH request to partially update an item
+  else if (req.method === 'PATCH' && req.url.startsWith('/shopping-list/')) {
+    const id = parseInt(req.url.split('/')[2]); // Ensure ID is a number
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const updatedFields = JSON.parse(body); // Fields to be updated
+        let shoppingList = readShoppingList();
+
+        let itemFound = false;
+        shoppingList = shoppingList.map(item => {
+          if (item.id === id) {
+            itemFound = true;
+            return { ...item, ...updatedFields }; // Merge only the updated fields
+          }
+          return item;
+        });
+
+        if (itemFound) {
+          updateShoppingList(shoppingList);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Item updated partially' }));
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Item not found' }));
+        }
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: error.message }));
@@ -77,12 +133,22 @@ const server = http.createServer((req, res) => {
   }
   // Handle DELETE request to remove an item
   else if (req.method === 'DELETE' && req.url.startsWith('/shopping-list/')) {
-    const id = req.url.split('/')[2];
+    const id = parseInt(req.url.split('/')[2]); // Ensure ID is a number
     let shoppingList = readShoppingList();
-    shoppingList = shoppingList.filter(item => item.id !== id);
-    updateShoppingList(shoppingList);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'Item deleted' }));
+
+    // Filter out the item with the matching ID
+    const updatedList = shoppingList.filter(item => item.id !== id);
+
+    if (shoppingList.length === updatedList.length) {
+      // No item was found to delete (i.e., the list length didn't change)
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Item not found' }));
+    } else {
+      // Update the list and write to file
+      updateShoppingList(updatedList);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Item deleted' }));
+    }
   } 
   // Handle invalid routes
   else {
