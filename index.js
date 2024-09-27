@@ -47,6 +47,14 @@ const updateShoppingList = (newData) => {
   fs.writeFileSync(filePath, JSON.stringify(newData, null, 2));
 };
 
+// Function to delete an image file from the uploads directory
+const deleteImageFile = (imageFileName) => {
+  const filePath = `${imagePath}/${imageFileName}`;
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath); // Delete the image file
+  }
+};
+
 // Create an HTTP server
 const server = http.createServer((req, res) => {
   // Serve static files (images)
@@ -147,15 +155,23 @@ const server = http.createServer((req, res) => {
     const id = req.url.split('/')[2];
     
     let shoppingList = readShoppingList();
-    const updatedList = shoppingList.filter(item => item.id !== id);
+    const itemToDelete = shoppingList.find(item => item.id === id);
 
-    if (shoppingList.length === updatedList.length) {
+    if (!itemToDelete) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Item not found' }));
     } else {
+      // Remove the item from the list
+      const updatedList = shoppingList.filter(item => item.id !== id);
       updateShoppingList(updatedList);
+
+      // If the item had an associated image, delete it from the uploads folder
+      if (itemToDelete.image) {
+        deleteImageFile(itemToDelete.image);
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Item deleted' }));
+      res.end(JSON.stringify({ message: 'Item and associated image deleted' }));
     }
   }
   

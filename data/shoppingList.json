@@ -1,26 +1,8 @@
 [
   {
-    "name": "Bananas",
-    "quantity": 10,
-    "price": 2.5,
-    "id": "15309a3f-f5a3-4a25-8272-0cc0ecf2e45f"
-  },
-  {
-    "name": "pear",
-    "quantity": 100,
-    "price": 5,
-    "id": "19cbca7b-3a16-4662-b9ca-f6f22cf9966f"
-  },
-  {
-    "id": "cf32ede6-38ce-48a6-b8c7-72880cfcbc74",
-    "name": "\"burger\"",
-    "quantity": "5",
-    "image": "1727375500513-392719764-images (1).jpg"
-  },
-  {
-    "id": "940d09dc-e16b-4df8-aae3-f0dd291cd2c5",
-    "name": "\"beef burger\"",
-    "quantity": "14",
-    "image": "1727377314438-428008436-images.jpg"
+    "id": "77ff734e-8651-4bc1-bcca-8d51fd555f2f",
+    "name": "burgers ",
+    "quantity": "64",
+    "image": "1727432657214-560555648-images.jpg"
   }
 ]
